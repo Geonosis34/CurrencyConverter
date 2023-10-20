@@ -58,22 +58,22 @@ const CurrencyConverter: React.FC<ExProps> = ({ initialCurrency = 'USD' }) => {
     }
   };
 
-  const renderDropdown = (selectedValue: string, onSelect: (value: string) => void) => (
-    <Dropdown
-      options={getOptions(currencies)}
-      selectedValue={selectedValue}
-      onSelect={onSelect}
-    />
-  );
-
   return (
     <div className="currency-converter">
       <CurrencyInput 
         value={amount} 
         onChange={setAmount} 
       />
-      {renderDropdown(fromCurrency, setFromCurrency)}
-      {renderDropdown(toCurrency, setToCurrency)}
+      <Dropdown
+        options={getOptions(currencies)}
+        selectedValue={fromCurrency}
+        onSelect={setFromCurrency}
+      />
+      <Dropdown
+        options={getOptions(currencies)}
+        selectedValue={toCurrency}
+        onSelect={setToCurrency}
+      />
       <ConvertButton onClick={handleConversion} />
       <ConversionResult 
         value={convertedAmount} 
