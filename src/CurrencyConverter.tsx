@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Dropdown from './Components/Dropdown';
 import CurrencyInput from './Components/CurrencyInput';
 import ConversionResult from './Components/ConversionResult';
@@ -23,64 +23,84 @@ interface Currencies {
   [key: string]: Currency;
 }
 
-const CurrencyConverter: React.FC<ExProps> = ({ initialCurrency = 'USD' }) => {
-  const [fromCurrency, setFromCurrency] = useState<string>(initialCurrency);
-  const [toCurrency, setToCurrency] = useState<string>('RUB');
-  const [amount, setAmount] = useState(1);
-  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
-  const [currencies, setCurrencies] = useState<Currencies>({});
+interface State {
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  convertedAmount: number | null;
+  currencies: Currencies;
+}
 
-  useEffect(() => {
-    const loadCurrencies = async () => {
-      try {
-        const data = await CurrencyService.fetchCurrencies();
-        setCurrencies(data);
-      } catch (error) {
-        console.error("Ошибка при загрузке валют:", error);
-      }
+class CurrencyConverter extends React.Component<ExProps, State> {
+  static defaultProps = {
+    initialCurrency: 'USD'
+  };
+
+  constructor(props: ExProps) {
+    super(props);
+    this.state = {
+      fromCurrency: this.props.initialCurrency!,
+      toCurrency: 'RUB',
+      amount: 1,
+      convertedAmount: null,
+      currencies: {}
     };
-    loadCurrencies();
-  }, []);
+  }
 
-  const getOptions = (currenciesData: Currencies) => {
+  componentDidMount() {
+    this.loadCurrencies();
+  }
+
+  async loadCurrencies() {
+    try {
+      const data = await CurrencyService.fetchCurrencies();
+      this.setState({ currencies: data });
+    } catch (error) {
+      console.error("Ошибка при загрузке валют:", error);
+    }
+  }
+
+  getOptions(currenciesData: Currencies) {
     return Object.keys(currenciesData).map(currencyCode => ({
       value: currencyCode,
       label: `${currenciesData[currencyCode].name} (${currencyCode})`
     }));
-  };
+  }
 
-  const handleConversion = async () => {
+  async handleConversion() {
     try {
-      const exchangeRate = await CurrencyService.calculateConversion(fromCurrency, toCurrency);
-      setConvertedAmount(amount * exchangeRate);
+      const exchangeRate = await CurrencyService.calculateConversion(this.state.fromCurrency, this.state.toCurrency);
+      this.setState({ convertedAmount: this.state.amount * exchangeRate });
     } catch (error) {
       console.error("Ошибка при конвертации:", error);
     }
-  };
+  }
 
-  return (
-    <div className="currency-converter">
-      <CurrencyInput 
-        value={amount} 
-        onChange={setAmount} 
-      />
-      <Dropdown
-        options={getOptions(currencies)}
-        selectedValue={fromCurrency}
-        onSelect={setFromCurrency}
-      />
-      <Dropdown
-        options={getOptions(currencies)}
-        selectedValue={toCurrency}
-        onSelect={setToCurrency}
-      />
-      <ConvertButton onClick={handleConversion} />
-      <ConversionResult 
-        value={convertedAmount} 
-        currency={toCurrency} 
-      />
-    </div>
-  );
+  render() {
+    return (
+      <div className="currency-converter">
+        <CurrencyInput 
+          value={this.state.amount} 
+          onChange={(value) => this.setState({ amount: value })} 
+        />
+        <Dropdown
+          options={this.getOptions(this.state.currencies)}
+          selectedValue={this.state.fromCurrency}
+          onSelect={(value) => this.setState({ fromCurrency: value })}
+        />
+        <Dropdown
+          options={this.getOptions(this.state.currencies)}
+          selectedValue={this.state.toCurrency}
+          onSelect={(value) => this.setState({ toCurrency: value })}
+        />
+        <ConvertButton onClick={() => this.handleConversion()} />
+        <ConversionResult 
+          value={this.state.convertedAmount} 
+          currency={this.state.toCurrency} 
+        />
+      </div>
+    );
+  }
 }
 
 export default CurrencyConverter;
